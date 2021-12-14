@@ -61,8 +61,51 @@ server <- function(input, output) {
   # variable/reactive values definition -------------------------------------
   
   units <- c("M","mM","muM","mug/mL","g/L")
+  
   rv <- reactiveValues()
   rv$data <- NULL
+  
+
+  # function set up ---------------------------------------------------------
+
+  calc <- function(unit,MW,conc){
+    
+    if(unit==units[1]){
+      concM <- as.numeric(conc)
+      result <- (concM*MW)*1000
+      x <- data.frame(M=concM,mM=concM*1000,muM=concM*1e6,mugmL=result,gL=result/1000)
+      x <- bind_cols(query,frame)
+      frame <<- x
+      
+    }else if(unit==units[2]){
+      concmM <- as.numeric(conc)
+      result <- ((concmM/1000)*MW)*1000
+      x <- data.frame(M=concmM/1000,mM=concmM,muM=concmM*1000,mugmL=result,gL=result/1000)
+      x <- bind_cols(query,frame)
+      frame <<- x
+      
+    }else if(unit==units[3]){
+      concmuM <- as.numeric(conc)
+      result <- ((concmuM/1e6)*MW)*1000
+      x <- data.frame(M=concmuM/1e6,mM=concmuM/1000,muM=concmuM,mugmL=result,gL=result/1000)
+      x <- bind_cols(query,frame)
+      frame <<- x
+      
+    }else if(unit==units[4]){
+      concMg <- as.numeric(conc)
+      result <- (concMg/1000)/MW
+      x <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concMg,gL=concMg/1000)
+      x <- bind_cols(query,frame)
+      frame <<- x
+      
+    }else{
+      concgL <- as.numeric(conc)
+      result <- (concgL)/MW
+      x <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concgL*1000,gL=concgL)
+      x <- bind_cols(query,frame)
+      frame <<- x
+    }
+  }
 
   # data generation ---------------------------------------------------------
 
@@ -71,6 +114,7 @@ server <- function(input, output) {
     
     
     # check for inputs --------------------------------------------------------
+    
     req(
       isTruthy(input$substance),
       isTruthy(input$conc))
@@ -82,45 +126,22 @@ server <- function(input, output) {
     query <- cir_query(input$substance,"mw")
     query <- unlist(query)
     
-    #' check for length
-    #' if longer than 1 make all of the below multiple times -> length(x)
-    #' it would be nice to set up the calculations as functions, 
-    #' individual or as a block (maybe easier)
-
     query <- data.frame(Substance=str_extract(names(query)[1],"[:alpha:]+"),MW=as.numeric(query[1]))
+    print("query done")
+    print(query)
     
     # calculations, based on selectorInput ------------------------------------
 
-    if(input$unit==units[1]){
-      concM <- as.numeric(input$conc)
-      result <- (concM*query$MW)*1000
-      frame <- data.frame(M=concM,mM=concM*1000,muM=concM*1e6,mugmL=result,gL=result/1000)
-      frame <- bind_cols(query,frame)
-      
-    }else if(input$unit==units[2]){
-      concmM <- as.numeric(input$conc)
-      result <- ((concmM/1000)*query$MW)*1000
-      frame <- data.frame(M=concmM/1000,mM=concmM,muM=concmM*1000,mugmL=result,gL=result/1000)
-      frame <- bind_cols(query,frame)
-      
-    }else if(input$unit==units[3]){
-      concmuM <- as.numeric(input$conc)
-      result <- ((concmuM/1e6)*query$MW)*1000
-      frame <- data.frame(M=concmuM/1e6,mM=concmuM/1000,muM=concmuM,mugmL=result,gL=result/1000)
-      frame <- bind_cols(query,frame)
-      
-    }else if(input$unit==units[4]){
-      concMg <- as.numeric(input$conc)
-      result <- (concMg/1000)/query$MW
-      frame <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concMg,gL=concMg/1000)
-      frame <- bind_cols(query,frame)
-      
-    }else{
-      concgL <- as.numeric(input$conc)
-      result <- (concgL)/query$MW
-      frame <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concgL*1000,gL=concgL)
-      frame <- bind_cols(query,frame)
-    }
+    unit <- input$unit
+    print(unit)
+    MW <- query$MW
+    print(MW)
+    conc <- input$conc
+    print(conc)
+
+    print("calc started")
+    calc(unit,MW,conc)
+    print("calc done")
 
     # addition of data to exisiting frame or new frame ------------------------
     colnames(frame) <- c("Substance","MW",units)
