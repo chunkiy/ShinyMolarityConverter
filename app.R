@@ -81,6 +81,12 @@ server <- function(input, output) {
     
     query <- cir_query(input$substance,"mw")
     query <- unlist(query)
+    
+    #' check for length
+    #' if longer than 1 make all of the below multiple times -> length(x)
+    #' it would be nice to set up the calculations as functions, 
+    #' individual or as a block (maybe easier)
+
     query <- data.frame(Substance=str_extract(names(query)[1],"[:alpha:]+"),MW=as.numeric(query[1]))
     
     # calculations, based on selectorInput ------------------------------------
