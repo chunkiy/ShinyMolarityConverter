@@ -13,13 +13,26 @@ ui <- fluidPage(
     
     # Sidebar panel for inputs ----
     sidebarPanel(
+      fluidRow(
+        column(width=12,
+               textInput("substance","Name of Substance"),
+          
+        )
+      ),
+      fluidRow(
+        column(width=4,
+               textInput("conc","Concentration")
+        ),
+        column(width=8,
+               selectInput("unit","Select units of input",c("M","muM","mug/L","g/L"))
+        )
+      ),
       
-      # Input: Slider for the number of bins ----
-      textInput("substance","Name of Substance"),
-      textInput("concM","Concentration in M"),
-      textInput("concMu","Concentration in µg/L"),
-      actionButton("calculate","Calculate"),
-      
+      fluidRow(
+        column(width=4,
+          actionButton("calculate","Calculate")
+        )
+      )
     ),
     
     # Main panel for displaying outputs ----
@@ -37,7 +50,8 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram ----
 server <- function(input, output) {
-
+  
+  units <- c("M","muM","mug/L","g/L")
   rv <- reactiveValues()
   rv$data <- NULL
   text <- reactiveValues()
