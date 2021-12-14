@@ -1,98 +1,130 @@
+
+# libraries ---------------------------------------------------------------
+
+
 library(shiny)
 library(tidyverse)
 library(webchem)
 
-# Define UI for app that draws a histogram ----
+
+# ui ----------------------------------------------------------------------
+
 ui <- fluidPage(
   
-  # App title ----
+  #App Title
   titlePanel("Molarity converter"),
   
-  # Sidebar layout with input and output definitions ----
+  # sidebar layout ----------------------------------------------------------
+
   sidebarLayout(
     
-    # Sidebar panel for inputs ----
+    # sidebarpanel ------------------------------------------------------------
+
     sidebarPanel(
+      fluidRow(
+        column(width=12,
+               textInput("substance","Name of Substance"),
+          
+        )
+      ),
+      fluidRow(
+        column(width=4,
+               textInput("conc","Concentration")
+        ),
+        column(width=8,
+               selectInput("unit","Select units of input",c("M","mM","mg/L","g/L"))
+        )
+      ),
       
-      # Input: Slider for the number of bins ----
-      textInput("substance","Name of Substance"),
-      textInput("concM","Concentration in M"),
-      textInput("concMu","Concentration in µg/L"),
-      actionButton("calculate","Calculate"),
-      
+      fluidRow(
+        column(width=4,
+          actionButton("calculate","Calculate")
+        )
+      )
     ),
+
+    # mainPanel ---------------------------------------------------------------
     
-    # Main panel for displaying outputs ----
     mainPanel(
-      
-      # Output: table ----
       textOutput("error"),
       tableOutput("table")
-      
-      
     )
   )
 )
 
 
-# Define server logic required to draw a histogram ----
-server <- function(input, output) {
+# server ------------------------------------------------------------------
 
+
+server <- function(input, output) {
+  
+  # variable/reactive values definition -------------------------------------
+  
+  units <- c("M","mM","mg/L","g/L")
   rv <- reactiveValues()
   rv$data <- NULL
-  text <- reactiveValues()
-  text$data <- NULL
-  
+
+  # data generation ---------------------------------------------------------
+
   
   data <- observeEvent(input$calculate, {
     
+    
+    # check for inputs --------------------------------------------------------
     req(
       isTruthy(input$substance),
-      isTruthy(input$concM) || isTruthy(input$concMu)
-    )
-    if(isTruthy(input$concM) & isTruthy(input$concMu)){
-      stop <- NULL
-      text$data <- "You have supplied to concentration inputs, can not calculate"
-      print("Two values supplied, logical error")
-    }else{
-      stop <- TRUE
-      text$data <- NULL
-    }
-    req(stop)
+      isTruthy(input$conc))
+    
     print("Event started")
+
+    # pubchem query -----------------------------------------------------------
     
     query <- cir_query(input$substance,"mw")
-    query <- enframe(query)
-    names(query) <- c("Substance","MW")
-    query$MW <- as.numeric(query$MW)
+    query <- unlist(query)
+    query <- data.frame(Substance=str_extract(names(query)[1],"[:alpha:]+"),MW=as.numeric(query[1]))
     
-    if(input$concM!=""){
-      concM <- as.numeric(input$concM)
+    # calculations, based on selectorInput ------------------------------------
+
+    if(input$unit==units[1]){
+      concM <- as.numeric(input$conc)
       result <- (concM*query$MW)*1000
-      frame <- data.frame(M=concM,mugL=result,gL=result/1000)
+      frame <- data.frame(M=concM,mM=concM*1000,mgL=result,gL=result/1000)
+      frame <- bind_cols(query,frame)
+      
+    }else if(input$unit==units[2]){
+      concmM <- as.numeric(input$conc)
+      result <- ((concmM/1000)*query$MW)*1000
+      frame <- data.frame(M=concmM/1000,mM=concmM,mgL=result,gL=result/1000)
+      frame <- bind_cols(query,frame)
+      
+    }else if(input$unit==units[3]){
+      concMg <- as.numeric(input$conc)
+      result <- (concMg/1000)/query$MW
+      frame <- data.frame(M=result,mM=result*1000,mgL=concMg,gL=concMg/1000)
       frame <- bind_cols(query,frame)
       
     }else{
-      concMu <- as.numeric(input$concMu)
-      result <- (concMu/1000)/query$MW
-      frame <- data.frame(M=result,mugL=concMu,gL=concMu/1000)
+      concgL <- as.numeric(input$conc)
+      result <- (concgL)/query$MW
+      frame <- data.frame(M=result,mM=result*1000,mgL=concgL*1000,gL=concgL)
       frame <- bind_cols(query,frame)
     }
-    
+
+    # addition of data to exisiting frame or new frame ------------------------
+
   if(is.null(rv$data)){
     rv$data <- frame
   }else{
     rv$data <- bind_rows(rv$data,frame)
   }
   
-  }
-  )
+}
+)
+
+  # output rendering --------------------------------------------------------
   
   output$table <- renderTable(
     rv$data,digits=5
-  )
-  output$error <- renderText(
-    text$data
   )
   
 }
