@@ -79,9 +79,9 @@ server <- function(input, output) {
 
     # pubchem query -----------------------------------------------------------
     
-    query <- cir_query("aspirin","mw")
+    query <- cir_query(input$substance,"mw")
     query <- unlist(query)
-    query <- data.frame(Substance=str_extract(names(x)[1],"[:alpha:]+"),MW=as.numeric(x[1]))
+    query <- data.frame(Substance=str_extract(names(query)[1],"[:alpha:]+"),MW=as.numeric(query[1]))
     
     # calculations, based on selectorInput ------------------------------------
 
