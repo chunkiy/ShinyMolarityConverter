@@ -32,7 +32,7 @@ ui <- fluidPage(
                textInput("conc","Concentration")
         ),
         column(width=8,
-               selectInput("unit","Select units of input",c("M","mM","mg/L","g/L"))
+               selectInput("unit","Select units of input",c("M","mM","muM","mug/mL","g/L"))
         )
       ),
       
@@ -60,7 +60,7 @@ server <- function(input, output) {
   
   # variable/reactive values definition -------------------------------------
   
-  units <- c("M","mM","mg/L","g/L")
+  units <- c("M","mM","muM","mug/mL","g/L")
   rv <- reactiveValues()
   rv$data <- NULL
 
@@ -88,35 +88,43 @@ server <- function(input, output) {
     if(input$unit==units[1]){
       concM <- as.numeric(input$conc)
       result <- (concM*query$MW)*1000
-      frame <- data.frame(M=concM,mM=concM*1000,mgL=result,gL=result/1000)
+      frame <- data.frame(M=concM,mM=concM*1000,muM=concM*1e6,mugmL=result,gL=result/1000)
       frame <- bind_cols(query,frame)
       
     }else if(input$unit==units[2]){
       concmM <- as.numeric(input$conc)
       result <- ((concmM/1000)*query$MW)*1000
-      frame <- data.frame(M=concmM/1000,mM=concmM,mgL=result,gL=result/1000)
+      frame <- data.frame(M=concmM/1000,mM=concmM,muM=concmM*1000,mugmL=result,gL=result/1000)
       frame <- bind_cols(query,frame)
       
     }else if(input$unit==units[3]){
+      concmuM <- as.numeric(input$conc)
+      result <- ((concmuM/1e6)*query$MW)*1000
+      frame <- data.frame(M=concmuM/1e6,mM=concmuM/1000,muM=concmuM,mugmL=result,gL=result/1000)
+      frame <- bind_cols(query,frame)
+      
+    }else if(input$unit==units[4]){
       concMg <- as.numeric(input$conc)
       result <- (concMg/1000)/query$MW
-      frame <- data.frame(M=result,mM=result*1000,mgL=concMg,gL=concMg/1000)
+      frame <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concMg,gL=concMg/1000)
       frame <- bind_cols(query,frame)
       
     }else{
       concgL <- as.numeric(input$conc)
       result <- (concgL)/query$MW
-      frame <- data.frame(M=result,mM=result*1000,mgL=concgL*1000,gL=concgL)
+      frame <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concgL*1000,gL=concgL)
       frame <- bind_cols(query,frame)
     }
 
     # addition of data to exisiting frame or new frame ------------------------
-
+    colnames(frame) <- c("Substance","MW",units)
+    
   if(is.null(rv$data)){
     rv$data <- frame
   }else{
     rv$data <- bind_rows(rv$data,frame)
   }
+  
   
 }
 )
