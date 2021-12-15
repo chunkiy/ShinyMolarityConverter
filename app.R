@@ -65,53 +65,9 @@ server <- function(input, output) {
   rv <- reactiveValues()
   rv$data <- NULL
   
-
-  # function set up ---------------------------------------------------------
-
-  calc <- function(unit,MW,conc){
-    
-    if(unit==units[1]){
-      concM <- as.numeric(conc)
-      result <- (concM*MW)*1000
-      x <- data.frame(M=concM,mM=concM*1000,muM=concM*1e6,mugmL=result,gL=result/1000)
-      x <- bind_cols(query,frame)
-      frame <<- x
-      
-    }else if(unit==units[2]){
-      concmM <- as.numeric(conc)
-      result <- ((concmM/1000)*MW)*1000
-      x <- data.frame(M=concmM/1000,mM=concmM,muM=concmM*1000,mugmL=result,gL=result/1000)
-      x <- bind_cols(query,frame)
-      frame <<- x
-      
-    }else if(unit==units[3]){
-      concmuM <- as.numeric(conc)
-      result <- ((concmuM/1e6)*MW)*1000
-      x <- data.frame(M=concmuM/1e6,mM=concmuM/1000,muM=concmuM,mugmL=result,gL=result/1000)
-      x <- bind_cols(query,frame)
-      frame <<- x
-      
-    }else if(unit==units[4]){
-      concMg <- as.numeric(conc)
-      result <- (concMg/1000)/MW
-      x <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concMg,gL=concMg/1000)
-      x <- bind_cols(query,frame)
-      frame <<- x
-      
-    }else{
-      concgL <- as.numeric(conc)
-      result <- (concgL)/MW
-      x <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concgL*1000,gL=concgL)
-      x <- bind_cols(query,frame)
-      frame <<- x
-    }
-  }
-
   # data generation ---------------------------------------------------------
 
-  
   data <- observeEvent(input$calculate, {
-    
     
     # check for inputs --------------------------------------------------------
     
@@ -119,37 +75,83 @@ server <- function(input, output) {
       isTruthy(input$substance),
       isTruthy(input$conc))
     
-    print("Event started")
+    #print("Event started")
 
+    # load function -----------------------------------------------------------
+    
+    #print("loading functions")
+    
+    calc <- function(unit,MW,conc){
+      
+      if(unit==units[1]){
+        concM <- as.numeric(conc)
+        result <- (concM*MW)*1000
+        x <- data.frame(M=concM,mM=concM*1000,muM=concM*1e6,mugmL=result,gL=result/1000)
+        x <- bind_cols(query,x)
+        placeholder <<- x
+        
+      }else if(unit==units[2]){
+        concmM <- as.numeric(conc)
+        result <- ((concmM/1000)*MW)*1000
+        x <- data.frame(M=concmM/1000,mM=concmM,muM=concmM*1000,mugmL=result,gL=result/1000)
+        x <- bind_cols(query,x)
+        placeholder <<- x
+        
+      }else if(unit==units[3]){
+        concmuM <- as.numeric(conc)
+        result <- ((concmuM/1e6)*MW)*1000
+        x <- data.frame(M=concmuM/1e6,mM=concmuM/1000,muM=concmuM,mugmL=result,gL=result/1000)
+        x <- bind_cols(query,x)
+        placeholder <<- x
+        
+      }else if(unit==units[4]){
+        concMg <- as.numeric(conc)
+        result <- (concMg/1000)/MW
+        x <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concMg,gL=concMg/1000)
+        x <- bind_cols(query,x)
+        placeholder <<- x
+        
+      }else{
+        concgL <- as.numeric(conc)
+        result <- (concgL)/MW
+        x <- data.frame(M=result,mM=result*1000,muM=result*1e6,mugmL=concgL*1000,gL=concgL)
+        x <- bind_cols(query,x)
+        placeholder <<- x
+      }
+    }
+    
+    #print("functions loaded")
     # pubchem query -----------------------------------------------------------
     
     query <- cir_query(input$substance,"mw")
     query <- unlist(query)
     
     query <- data.frame(Substance=str_extract(names(query)[1],"[:alpha:]+"),MW=as.numeric(query[1]))
-    print("query done")
-    print(query)
+    #print("query done")
+    #print(query)
     
     # calculations, based on selectorInput ------------------------------------
 
     unit <- input$unit
-    print(unit)
+    #print(unit)
     MW <- query$MW
-    print(MW)
+    #print(MW)
     conc <- input$conc
-    print(conc)
+    #print(conc)
 
-    print("calc started")
+    #print("calc started")
+    
     calc(unit,MW,conc)
-    print("calc done")
+    
+    #print("calc done")
 
     # addition of data to exisiting frame or new frame ------------------------
-    colnames(frame) <- c("Substance","MW",units)
+    colnames(placeholder) <- c("Substance","MW",units)
     
   if(is.null(rv$data)){
-    rv$data <- frame
+    rv$data <- placeholder
   }else{
-    rv$data <- bind_rows(rv$data,frame)
+    rv$data <- bind_rows(rv$data,placeholder)
   }
   
   
