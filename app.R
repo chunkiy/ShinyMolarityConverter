@@ -119,16 +119,37 @@ server <- function(input, output) {
         placeholder <<- x
       }
     }
-    
     #print("functions loaded")
+    
     # pubchem query -----------------------------------------------------------
     
     query <- cir_query(input$substance,"mw")
     query <- unlist(query)
     
-    query <- data.frame(Substance=str_extract(names(query)[1],"[:alpha:]+"),MW=as.numeric(query[1]))
-    #print("query done")
-    #print(query)
+    #define case unspecific variables (namely input)
+    
+    unit <- input$unit
+    conc <- input$conc
+    
+    if(length(query==1)){ #the normal one as before
+      
+      query <- data.frame(Substance=str_extract(names(query)[1],"[:alpha:]+"),MW=as.numeric(query[1])) #extract the 1 row correctly
+      
+      #define case unique variables
+      MW <- query$MW
+      
+      #calc the thing as ususal
+      calc(unit,MW,conc)
+      
+    }else if(length(query>1)){
+      names <- names(query)
+      MW <- unname(query)
+      leng <- length(names)
+      query <- data.frame(Substance=names,MW=as.numeric(MW))
+      
+      
+    }
+    
     
     # calculations, based on selectorInput ------------------------------------
 
