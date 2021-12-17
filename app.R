@@ -31,15 +31,17 @@ ui <- fluidPage(
         column(width=4,
                textInput("conc","Concentration")
         ),
-        column(width=8,
-               selectInput("unit","Select units of input",c("M","mM","muM","mug/mL","g/L"))
+        column(width=7, offset=1,
+               selectInput("unit","Input Conc.",c("M","mM","muM","mug/mL","g/L"))
         )
       ),
       
       fluidRow(
         column(width=4,
           actionButton("calculate","Calculate")
-        )
+        ),
+        column(width=4, offset=2,
+               downloadButton("download","Download"))
       )
     ),
 
@@ -162,6 +164,9 @@ server <- function(input, output) {
     unit <- input$unit
     conc <- input$conc
     
+    if(length(query)==2&query[1]==query[2])
+      query <- query[1]
+    
     if (length(query)==1 & !is.na(query) ) { #the normal one as before
       print("nono")
       query <- data.frame(Substance=str_extract(names(query)[1],"[:alpha:]+"),MW=as.numeric(query[1])) #extract the 1 row correctly
@@ -218,6 +223,15 @@ server <- function(input, output) {
   )
   output$wrong <- renderText(
     wrong$data
+  )
+  
+  output$download <- downloadHandler(
+    filename = function() {
+      paste(rv$data, ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(rv$data, file, row.names = FALSE)
+    }
   )
 }
 
